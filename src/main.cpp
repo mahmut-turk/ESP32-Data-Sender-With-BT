@@ -2,39 +2,74 @@
 #include "BluetoothSerial.h"
 
 BluetoothSerial Mahmut; // Bluetooth device name "Mahmut"
-int btn = 0;
+
 const int btnPin = 27;
 const int ledPin = 33;
 const int adcPin = 32;
+
+bool ledState = false;   // LED durumu
+int btnCounter = 0;
 
 void setup() {
   Serial.begin(115200);
   Mahmut.begin("ESP32_Mahmut");
   Serial.println("Bluetooth data started");
 
-  pinMode(btnPin, INPUT_PULLUP);   
+  pinMode(btnPin, INPUT_PULLUP);
   pinMode(ledPin, OUTPUT);
 }
 
-void loop() {
+void sendADC() {
   int sensorValue = analogRead(adcPin);
-
-  // sending ADC data
   String adcStr = "ADC:" + String(sensorValue);
   Mahmut.println(adcStr);
   Serial.println(adcStr);
+}
 
-  // controlling button
+void sendButtonLED() {
+  // Buton toggle
   if (digitalRead(btnPin) == LOW) {
-    btn++;
-    digitalWrite(ledPin, HIGH);
+    btnCounter++;
+    ledState = !ledState;
+    digitalWrite(ledPin, ledState ? HIGH : LOW);
 
-    String btnStr = "BTN:The button was pressed " + String(btn) + " time(s).";
+    // LED durumu bildir
+    String ledStr = ledState ? "LED:ON" : "LED:OFF";
+    Mahmut.println(ledStr);
+    Serial.println(ledStr);
+
+    // Buton mesajı
+    String btnStr = "BTN:The button was pressed " + String(btnCounter) + " time(s).";
     Mahmut.println(btnStr);
     Serial.println(btnStr);
-  } else {
-    digitalWrite(ledPin, LOW);
-  }
 
-  delay(100); // reading in 100 milisecond intervals
+    delay(300); // debounce
+  }
+  // LED durumunu sabitle
+  digitalWrite(ledPin, ledState ? HIGH : LOW);
+}
+
+void receiveBluetooth() {
+  while(Mahmut.available()){
+    char c = Mahmut.read();
+    if(c == '1'){
+      ledState = true;
+      digitalWrite(ledPin, HIGH);
+      Mahmut.println("LED:ON");
+      Serial.println("LED ON (Bluetooth)");
+    } 
+    else if(c == '0'){
+      ledState = false;
+      digitalWrite(ledPin, LOW);
+      Mahmut.println("LED:OFF");
+      Serial.println("LED OFF (Bluetooth)");
+    }
+  }
+}
+
+void loop() {
+  receiveBluetooth();
+  sendADC();
+  sendButtonLED();
+  delay(100);
 }
