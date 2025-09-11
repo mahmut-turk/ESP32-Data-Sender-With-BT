@@ -6,6 +6,7 @@ BluetoothSerial Mahmut; // Bluetooth device name "Mahmut"
 const int btnPin = 27;
 const int ledPin = 33;
 const int adcPin = 32;
+const int ecgPin = 34;
 
 bool ledState = false;   // LED durumu
 int btnCounter = 0;
@@ -24,6 +25,13 @@ void sendADC() {
   String adcStr = "ADC:" + String(sensorValue);
   Mahmut.println(adcStr);
   Serial.println(adcStr);
+}
+
+void sendECG() {
+  int sensorECG = analogRead(ecgPin);
+  String ecgStr = "ECG:" + String(sensorECG);
+  Mahmut.println(ecgStr);
+  Serial.println(ecgStr);
 }
 
 void sendButtonLED() {
@@ -70,6 +78,7 @@ void receiveBluetooth() {
 void loop() {
   receiveBluetooth();
   sendADC();
+  sendECG();
   sendButtonLED();
   delay(100);
 }
